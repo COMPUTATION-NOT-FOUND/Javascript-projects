@@ -1,4 +1,4 @@
-//APP.jsc
+//App.jsx
 import React from 'react';
 import SandSimulator from './SandSimulator';
 
