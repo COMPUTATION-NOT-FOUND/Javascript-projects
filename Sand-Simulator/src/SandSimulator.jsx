@@ -1,10 +1,12 @@
 import React, { useRef, useEffect, useState } from 'react';
 
-const SandSimulator = () => {
+const SandSimulator = ({gridlines,colour}) => {
   const canvasRef = useRef(null);
-  const canvasWidth = 400; 
-  const canvasHeight = 400; 
+  const gridRef = useRef([]);
+  const canvasWidth = 500; 
+  const canvasHeight = 500; 
   const [isDragging, setIsDragging] = useState(false);
+  const colorRef = useRef({h:0.1,s:255 ,l:255});
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -13,13 +15,21 @@ const SandSimulator = () => {
     canvas.height = canvasHeight;
 
     
-
     const rows = canvasHeight/10;
     const columns = canvasWidth/10;
 
-    let grid = [];
+  
+    const updatecolour = () =>{
+    if(!colour) return 'white';
+    colorRef.current.h+=1;
 
-    const make2darray = (rows,columns)=>{
+    if(colorRef.current.h>360){
+      colorRef.current.h-=360;
+    }
+    return `hsl(${colorRef.current.h},100%,50%)`;
+     }
+
+    const Make2dArray = (rows,columns)=>{
         let array =[];
         for (let i = 0; i < columns; i++) {
             array[i] = [];
@@ -30,64 +40,80 @@ const SandSimulator = () => {
         return array;
 
     };
-
-    const init = () => {
-        let count=0;
-        context.strokeStyle = 'white';
-        context.lineWidth = 2; 
-        for (let i = 0; i < columns; i++) {
-            grid[i] = [];
-            context.beginPath();
-            context.moveTo(i * 10, 0);
-            context.lineTo(i * 10, canvasHeight);
-            context.stroke();
-            for (let j = 0; j < rows; j++) {
-                grid[i][j] = 0;
-                if(count==0)
-                    {context.beginPath();
-                    context.moveTo(0, j * 10);
-                    context.lineTo(canvasWidth, j * 10);
-                    context.stroke();}
-        }
-        count+=1;
+ 
+    const MakeGridPattern = () => {
+      context.strokeStyle = 'white';
+      context.lineWidth = 2;
+      for (let i = 0; i < rows; i++){
+        context.beginPath();
+        context.moveTo(i * 10, 0);
+        context.lineTo(i * 10, canvasHeight);
+        context.stroke();
       }
+      for (let j = 0; j < columns; j++){
+        context.beginPath();
+        context.moveTo(0, j * 10);
+        context.lineTo(canvasWidth, j * 10);
+        context.stroke();
+      }
+
+    };
+    
+    const Init = () => {
+      if (gridRef.current.length) return;
+      gridRef.current = Array.from({ length: columns }, () => Array.from({ length: rows }, () => 0));
+      MakeGridPattern();
     };
 
 
-    const draw = () => {
-        
-        context.fillStyle = 'white';
-        for (let i = 0; i < columns; i++) {
-          for (let j = 0; j < rows; j++) {
-            if (grid[i][j] === 1) {
-              context.fillRect(i*10, j*10, 10, 10); // Draw sand particle
-            }
+    const Draw = () => {
+      context.fillStyle = 'black';
+      context.clearRect(0,0,canvasWidth, canvasHeight) ;
+      if(gridlines)
+      MakeGridPattern();
+      context.fillStyle = updatecolour();
+      for (let i = 0; i < rows; i++) {
+        for (let j = 0; j < columns; j++) {
+          if (gridRef.current[i][j] === 1) {
+            context.fillRect(i*10, j*10, 10, 10); 
           }
         }
-      };
+      }
+    };
   
 
-    const updategrid = ( ) => {
-        let nextgrid=make2darray(rows,columns);
-        for (let i = 0; i < columns; i++) {
-            for (let j = 0; j < rows; j++) {
-                if(grid[i][j]===1){
-                    if(grid[i][j+1]===0 && j <rows ){
-                    nextgrid[i][j+1]=1;
-                    context.clearRect(i*10 +1  ,j*10 +1, 8, 8);
-                    }
-                    else{
-                     nextgrid[i][j]=1;
-                    }
-                }
-            }
-        }    
-        grid=nextgrid;
+    const UpdateGrid = ( ) => { 
+      const grid = gridRef.current;
+      let nextgrid = Make2dArray(rows,columns);
+      for (let i = 0; i < rows; i++) {
+        for (let j = 0; j < columns ; j++) {
+          if(grid[i][j]!==1){
+            continue;
+          }
+          
+
+          if(  j<rows-1 && grid[i][j+1]===0  ){
+          nextgrid[i][j+1]=1;
+          }
+          
+          else if(  j<rows-1 && i <columns-1 && grid[i+1][j+1]===0 ){
+            nextgrid[i+1][j+1]=1;
+          }
+          else if( j <rows-1 && i>0 && grid[i-1][j+1]===0  ){
+            nextgrid[i-1][j+1]=1;
+          }
+
+          else{
+          nextgrid[i][j]=1;
+          }
+        }
+      }
+       gridRef.current=nextgrid;
     }; 
 
     const animate = () =>{
-        updategrid();
-        draw();
+        Draw();
+        UpdateGrid();
         requestAnimationFrame(animate);  
     };
 
@@ -100,6 +126,7 @@ const SandSimulator = () => {
     };
 
     const handleMouseMove = (e) => {
+      const grid=gridRef.current;
         if (isDragging)
         {const rect =canvas.getBoundingClientRect();
         const x = Math.floor((e.clientX -rect.left)/10);
@@ -113,7 +140,7 @@ const SandSimulator = () => {
     canvas.addEventListener('mouseup', handleMouseUp);
     canvas.addEventListener('mousemove', handleMouseMove);
 
-    init();
+    Init();
     animate();
    
 
@@ -124,7 +151,7 @@ const SandSimulator = () => {
       };
 
 
-}, [isDragging]);
+}, [isDragging, gridlines]);
 
 return <canvas ref={canvasRef}></canvas>;
 };

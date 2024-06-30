@@ -10,7 +10,10 @@ body,html{
   canvas {
     border: 1px solid lightgray;
     background-color: black;
-    
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center; 
     
   }
   
@@ -19,6 +22,10 @@ body,html{
     text-shadow: 2px 2px 0 black;
     font-family: 'Audiowide', cursive; 
     font-size: 3rem; 
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
   }
   
   .link {
