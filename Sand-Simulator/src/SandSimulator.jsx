@@ -5,8 +5,7 @@ const SandSimulator = ({gridlines,colour}) => {
   const gridRef = useRef([]);
   const canvasWidth = 500; 
   const canvasHeight = 500; 
-  const [isDragging, setIsDragging] = useState(false);
-  const colorRef = useRef({h:0.1,s:255 ,l:255});
+  const colorRef = useRef({h:1});
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -20,13 +19,12 @@ const SandSimulator = ({gridlines,colour}) => {
 
   
     const updatecolour = () =>{
-    if(!colour) return 'white';
     colorRef.current.h+=1;
 
     if(colorRef.current.h>360){
       colorRef.current.h-=360;
     }
-    return `hsl(${colorRef.current.h},100%,50%)`;
+    return colorRef.current.h;
      }
 
     const Make2dArray = (rows,columns)=>{
@@ -71,10 +69,11 @@ const SandSimulator = ({gridlines,colour}) => {
       context.clearRect(0,0,canvasWidth, canvasHeight) ;
       if(gridlines)
       MakeGridPattern();
-      context.fillStyle = updatecolour();
       for (let i = 0; i < rows; i++) {
         for (let j = 0; j < columns; j++) {
-          if (gridRef.current[i][j] === 1) {
+          if (gridRef.current[i][j] >=1) {
+            context.fillStyle = colour ? `hsl(${gridRef.current[i][j]}, 100%, 50%)` : 'white';
+            //context.fillStyle = `hsl( 0,0,${gridRef.current[i][j]%100}%`; // just testing if greyscale was doable
             context.fillRect(i*10, j*10, 10, 10); 
           }
         }
@@ -87,24 +86,24 @@ const SandSimulator = ({gridlines,colour}) => {
       let nextgrid = Make2dArray(rows,columns);
       for (let i = 0; i < rows; i++) {
         for (let j = 0; j < columns ; j++) {
-          if(grid[i][j]!==1){
+          if(grid[i][j]===0){
             continue;
           }
           
 
           if(  j<rows-1 && grid[i][j+1]===0  ){
-          nextgrid[i][j+1]=1;
+          nextgrid[i][j+1]=gridRef.current[i][j];
           }
           
           else if(  j<rows-1 && i <columns-1 && grid[i+1][j+1]===0 ){
-            nextgrid[i+1][j+1]=1;
+            nextgrid[i+1][j+1]=gridRef.current[i][j];
           }
           else if( j <rows-1 && i>0 && grid[i-1][j+1]===0  ){
-            nextgrid[i-1][j+1]=1;
+            nextgrid[i-1][j+1]=gridRef.current[i][j];
           }
 
           else{
-          nextgrid[i][j]=1;
+          nextgrid[i][j]=gridRef.current[i][j];
           }
         }
       }
@@ -117,27 +116,18 @@ const SandSimulator = ({gridlines,colour}) => {
         requestAnimationFrame(animate);  
     };
 
-    const handleMouseDown = () => {
-        setIsDragging(true);
-    };
-  
-    const handleMouseUp = () => {
-        setIsDragging(false);
-    };
-
+   
     const handleMouseMove = (e) => {
-      const grid=gridRef.current;
-        if (isDragging)
+        if (e.buttons==1)
         {const rect =canvas.getBoundingClientRect();
         const x = Math.floor((e.clientX -rect.left)/10);
         const y = Math.floor((e.clientY -rect.top)/10);
         if(x>=0 && x< columns && y>=0 && y<rows){
-            grid[x][y]=1;
+            gridRef.current[x][y]= updatecolour();
         }}
     };
 
-    canvas.addEventListener('mousedown', handleMouseDown);
-    canvas.addEventListener('mouseup', handleMouseUp);
+    
     canvas.addEventListener('mousemove', handleMouseMove);
 
     Init();
@@ -145,13 +135,12 @@ const SandSimulator = ({gridlines,colour}) => {
    
 
     return () => {
-        canvas.removeEventListener('mousedown', handleMouseDown);
-        canvas.removeEventListener('mouseup', handleMouseUp);
+       
         canvas.removeEventListener('mousemove', handleMouseMove);
       };
 
 
-}, [isDragging, gridlines]);
+}, [gridlines,colour]);
 
 return <canvas ref={canvasRef}></canvas>;
 };
